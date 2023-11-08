@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Song Player</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+
+<body>
+    <h1>Audio Player</h1>
+
+    <audio id="audioPlayer" controls>
+        <source src="" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+    <div class="song-info">
+        <p>Currently Playing: <span id="currentSong">No song selected</span></p>
+    </div>
+
+    <div class="controls">
+        <button onclick="playPrevious()">Previous</button>
+        <button onclick="playNext()">Next</button>
+        <button onclick="toggleShuffle()" id="shuffleButton">Shuffle Off</button>
+        <button onclick="togglePlayPause()" id="playPauseButton">Play</button>
+    </div>
+
+    <div class="songs">
+        {% for song in songs %}
+        <button onclick="playSong('{{ song }}')" id="{{ song.replace('.mp3', '') }}">{{ song }}</button>
+        {% endfor %}
+    </div>
+
+    <script>
+        var currentSong = 0;
+        var audio = document.getElementById('audioPlayer');
+        var songsList = [
+            {% for song in songs %}
+        '{{ song }}',
+            {% endfor %}
+        ];
+        var originalOrder = [...songsList]; // Keep a copy of the original order
+        var isShuffleOn = false;
+        var isPaused = true;
+
+        audio.addEventListener('ended', function () {
+            if (!isPaused) {
+                if (isShuffleOn) {
+                    currentSong = (currentSong + 1) % songsList.length;
+                    var nextSong = songsList[currentSong];
+                    audio.src = "static/music/" + nextSong;
+                    audio.play();
+                    document.getElementById('currentSong').innerText = nextSong;
+
+                    var buttons = document.getElementsByClassName("songs")[0].getElementsByTagName("button");
+                    for (var i = 0; i < buttons.length; i++) {
+                        buttons[i].classList.remove("highlight");
+                    }
+                    document.getElementById(nextSong.replace('.mp3', '')).classList.add("highlight");
+                } else {
+                    playNext(); // Play in order when shuffle is off
+                }
+            }
+        });
+
+        function playSong(song) {
+            var index = songsList.indexOf(song);
+            audio.src = "static/music/" + song;
+            audio.play();
+            currentSong = index;
+            document.getElementById('currentSong').innerText = song;
+
+            var buttons = document.getElementsByClassName("songs")[0].getElementsByTagName("button");
+            for (var i = 0; i < buttons.length; i++) {
+                buttons[i].classList.remove("highlight");
+            }
+            document.getElementById(song.replace('.mp3', '')).classList.add("highlight");
+
+            // Do not change the shuffle state when manually selecting a song
+            isPaused = false;
+            document.getElementById("playPauseButton").innerText = "Pause";
+        }
+
+
+        function playNext() {
+            currentSong = (currentSong + 1) % songsList.length;
+            var nextSong = songsList[currentSong];
+            audio.src = "static/music/" + nextSong;
+            audio.play();
+            document.getElementById('currentSong').innerText = nextSong;
+
+            var buttons = document.getElementsByClassName("songs")[0].getElementsByTagName("button");
+            for (var i = 0; i < buttons.length; i++) {
+                buttons[i].classList.remove("highlight");
+            }
+            document.getElementById(nextSong.replace('.mp3', '')).classList.add("highlight");
+
+            // Ensure the play/pause toggle button is in the pause state
+            document.getElementById('playPauseButton').innerText = "Pause"; // assuming 'playPauseButton' is the ID of your play/pause toggle button
+        }
+
+
+        function playPrevious() {
+            currentSong = (currentSong - 1 + songsList.length) % songsList.length;
+            var prevSong = songsList[currentSong];
+            audio.src = "static/music/" + prevSong;
+            audio.play();
+            document.getElementById('currentSong').innerText = prevSong;
+
+            var buttons = document.getElementsByClassName("songs")[0].getElementsByTagName("button");
+            for (var i = 0; i < buttons.length; i++) {
+                buttons[i].classList.remove("highlight");
+            }
+            document.getElementById(prevSong.replace('.mp3', '')).classList.add("highlight");
+        }
+
+        function toggleShuffle() {
+            if (isShuffleOn) {
+                songsList = [...originalOrder]; // Revert to the original order
+                isShuffleOn = false;
+                document.getElementById("shuffleButton").innerText = "Shuffle Off";
+            } else {
+                var currentIndex = songsList.length, temporaryValue, randomIndex;
+
+                while (0 !== currentIndex) {
+                    randomIndex = Math.floor(Math.random() * currentIndex);
+                    currentIndex -= 1;
+
+                    temporaryValue = songsList[currentIndex];
+                    songsList[currentIndex] = songsList[randomIndex];
+                    songsList[randomIndex] = temporaryValue;
+                }
+                isShuffleOn = true;
+                document.getElementById("shuffleButton").innerText = "Shuffle On";
+            }
+        }
+
+        function togglePlayPause() {
+            if (isPaused) {
+                audio.play();
+                isPaused = false;
+                document.getElementById("playPauseButton").innerText = "Pause";
+            } else {
+                audio.pause();
+                isPaused = true;
+                document.getElementById("playPauseButton").innerText = "Play";
+            }
+        }
+    </script>
+</body>
+
+</html>
